@@ -11,6 +11,7 @@ using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 using System.Linq;
+using UnityEditor.Compilation;
 
 namespace ScriptHotReload
 {
@@ -84,7 +85,19 @@ namespace ScriptHotReload
                     miCompileScripts = mi;
             }
             miScriptSettings_SetOutputDirectory = tScriptAssemblySettings.GetProperty("OutputDirectory", BindingFlags.Public | BindingFlags.Instance).GetSetMethod();
-            miRequestScriptCompilation = tCompilationPipeline.GetMethod("RequestScriptCompilation", BindingFlags.Public | BindingFlags.Static);
+            try
+            {
+                miRequestScriptCompilation = tCompilationPipeline.GetMethod("RequestScriptCompilation", BindingFlags.Public | BindingFlags.Static);
+            }
+            catch (Exception)
+            {
+                miRequestScriptCompilation = tCompilationPipeline.GetMethods(BindingFlags.Public | BindingFlags.Static).Where(m =>
+                {
+                    return  m.Name.Equals("RequestScriptCompilation") &&m.GetParameters().Length == 0;
+                }).Single();
+            }
+            
+            
             miDirtyAllScripts = tEditorCompilationInterface.GetMethod("DirtyAllScripts", BindingFlags.Public | BindingFlags.Static);
 
             EditorCompilation_Instance = tEditorCompilationInterface.GetProperty("Instance", BindingFlags.Static | BindingFlags.Public).GetGetMethod().Invoke(null, null);
